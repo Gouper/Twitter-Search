@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 from bs4 import BeautifulSoup
 import time
+from csv import DictWriter
 import pprint
 import datetime
 from datetime import date, timedelta
@@ -42,12 +43,15 @@ def scrape_tweets(driver):
         dates = []
         names = []
         tweet_texts = []
-        uid = []
         tid = []
         real_name = []
+        reply_counts = []
+        retweet_counts = []
+        like_counts = []
         for i in content:
             date = i.find_all("span", class_="_timestamp")[0].get("data-time")
-            date = datetime.datetime.utcfromtimestamp(int(date))
+            #  GMT:0
+            date = datetime.datetime.utcfromtimestamp(int(date)).strftime('%Y-%m-%d %H:%M:%S')
             try:
                 nick_name = (i.find_all("strong", class_="fullname")[0].string).strip()
                 user_name = i.find_all("a", class_="account-group")[0].get("href")
@@ -56,8 +60,12 @@ def scrape_tweets(driver):
                 user_name = "Anonymous"
                 nick_name = "Anonymous"
 
-            user_id = i.find_all("a", class_="account-group")[0].get("data-user-id")
             tweet_id = i.find_all("a", class_="tweet-timestamp")[0].get("data-conversation-id")
+
+            count = i.find_all("span", class_="ProfileTweet-actionCount")
+            reply_count = count[0].get("data-tweet-stat-count")
+            retweet_count = count[1].get("data-tweet-stat-count")
+            like_count = count[2].get("data-tweet-stat-count")
 
             tweets = i.find("p", class_="tweet-text").strings
             tweet_text = "".join(tweets)
@@ -65,17 +73,21 @@ def scrape_tweets(driver):
             dates.append(date)
             names.append(nick_name)
             tweet_texts.append(tweet_text)
-            uid.append(user_id)
             tid.append(tweet_id)
             real_name.append(user_name)
+            reply_counts.append(reply_count)
+            retweet_counts.append(retweet_count)
+            like_counts.append(like_count)
 
         data = {
             "date": dates,
             "nick_name": names,
             "tweet": tweet_texts,
-            "user_id": uid,
             "tweet_id": tid,
-            "real_name": real_name
+            "real_name": real_name,
+            "reply_count": reply_counts,
+            "retweet_count": retweet_counts,
+            "like_count": like_counts
         }
         # make_csv(data)
         save_into_sql(data)
@@ -92,7 +104,7 @@ def save_into_sql(data):
     for i in range(l):
         data['nick_name'][i] = data['nick_name'][i].replace(u'\xa0', u' ')
         data['tweet'][i] = data['tweet'][i].replace(u'\xa0', u' ')
-        tweet_list.append([data['tweet_id'][i], data['user_id'][i], data['real_name'][i], data['nick_name'][i], data['date'][i], data['tweet'][i]])
+        tweet_list.append([data['tweet_id'][i], data['real_name'][i], data['nick_name'][i], data['date'][i], data['tweet'][i], data['reply_count'][i], data['retweet_count'][i], data['like_count'][i]])
     cur.executemany(sql1, tweet_list)
     conn.commit()
 
@@ -108,21 +120,27 @@ def get_all_dates(start_date, end_date):
     return dates
 
 if __name__ == "__main__":
-    sql1 = "REPLACE INTO user_tweet(tweet_id, user_id, real_name, nick_name, created_time, tweet_text)VALUES (%s, %s, %s, %s, %s, %s)"
+    sql1 = "REPLACE INTO user_tweet(tweet_id, real_name, nick_name, created_time, tweet_text, reply_count, retweet_count, like_count, reply_index)VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 0)"
     conn = pymysql.connect(host='localhost', user='root', passwd='123456', db='twitter', port=3306, charset='utf8mb4')
     cur = conn.cursor()
+    sql_user = "SELECT * FROM user_need WHERE user_index = 0"
+    cur.execute(sql_user)
+    users = cur.fetchall()
 
-    user = input("Enter the user: ")
-    start_date = input("Enter the start date in (Y-M-D): ")
-    end_date = input("Enter the end date in (Y-M-D): ")
-    all_dates = get_all_dates(start_date, end_date)
-
-    driver = webdriver.Chrome()
-    for i in range(len(all_dates) - 1):
-        scroll(driver, str(all_dates[i]), str(all_dates[i + 1]), user)
-        scrape_tweets(driver)
-        time.sleep(3)
-        print("The tweets for {} are ready!".format(all_dates[i]))
-    driver.quit()
+    for user in users:
+        # user = input("Enter the user: ")
+        start_date = input("Enter the start date in (Y-M-D): ")
+        end_date = input("Enter the end date in (Y-M-D): ")
+        all_dates = get_all_dates(start_date, end_date)
+        driver = webdriver.Chrome()
+        for i in range(len(all_dates) - 1):
+            scroll(driver, str(all_dates[i]), str(all_dates[i + 1]), user[0])
+            scrape_tweets(driver)
+            time.sleep(2)
+            print("The tweets for {} are ready!".format(all_dates[i]))
+        driver.quit()
+        sql_update = "UPDATE user_need SET user_index = 1 WHERE user_name = '%s'" % (user[0])
+        cur.execute(sql_update)
+        conn.commit()
     conn.close()
 
