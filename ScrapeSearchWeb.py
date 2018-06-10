@@ -10,12 +10,13 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import TimeoutException, NoSuchElementException
 import pymysql
 
 
-def scroll(driver, start_date, end_date, words, lang, max_time=5):
+def scroll(driver, start_date, end_date, words, lang):
 	languages = { 1: 'en', 2: 'it', 3: 'es', 4: 'fr', 5: 'de', 6: 'ru', 7: 'zh'}
+	tweet_selector = 'li.js-stream-item'
 	url = "https://twitter.com/search?f=tweets&q="
 	url += "{}%20".format(words)
 	url += "since%3A{}%20until%3A{}&".format(start_date, end_date)
@@ -24,9 +25,44 @@ def scroll(driver, start_date, end_date, words, lang, max_time=5):
 	url += "src=typd"
 	print(url)
 	driver.get(url)
-	start_time = time.time()  # remember when we started
-	while (time.time() - start_time) < max_time:
-		driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+	# start_time = time.time()  # remember when we started
+	try:
+		found_tweets = driver.find_elements_by_css_selector(tweet_selector)
+		increment = 0
+		while len(found_tweets) > increment:
+			driver.execute_script('window.scrollTo(0, document.body.scrollHeight);')
+			time.sleep(2)
+			increment = len(found_tweets)
+			print('scrolling down to load more tweets %s' % (increment))
+			found_tweets = driver.find_elements_by_css_selector(tweet_selector)
+	except NoSuchElementException:
+		print('no tweets on this day')
+
+def scroll2(driver, start_date, end_date, words, lang, max_tweets):
+	languages = {1: 'en', 2: 'it', 3: 'es', 4: 'fr', 5: 'de', 6: 'ru', 7: 'zh'}
+	tweet_selector = 'li.js-stream-item'
+	url = "https://twitter.com/search?f=tweets&q="
+	url += "{}%20".format(words)
+	url += "since%3A{}%20until%3A{}&".format(start_date, end_date)
+	if lang != 0:
+		url += "l={}&".format(languages[lang])
+	url += "src=typd"
+	print(url)
+	driver.get(url)
+	# start_time = time.time()  # remember when we started
+	try:
+		found_tweets = driver.find_elements_by_css_selector(tweet_selector)
+		increment = 0
+		while len(found_tweets) < max_tweets:
+			driver.execute_script('window.scrollTo(0, document.body.scrollHeight);')
+			time.sleep(2)
+			increment = len(found_tweets)
+			print('scrolling down to load more tweets %s' % (increment))
+			found_tweets = driver.find_elements_by_css_selector(tweet_selector)
+			if increment == len(found_tweets):
+				break
+	except NoSuchElementException:
+		print('no tweets on this day')
 
 
 def scrape_tweets(driver):
@@ -126,13 +162,24 @@ if __name__ == "__main__":
 	lang = int(input("0) All Languages 1) English | 2) Italian | 3) Spanish | 4) French | 5) German | 6) Russian | 7) Chinese\nEnter the language you want to use: "))
 	start_date = input("Enter the start date in (Y-M-D): ")
 	end_date = input("Enter the end date in (Y-M-D): ")
-	max_time = int(input("Enter the maximum number 'n' that every day you will collect 20*n tweets:"))
+	choose = int(input("input what kind of method you want to get:\n1).the day you want get some tweets   2).the day you want get all tweets"))
 	all_dates = get_all_dates(start_date, end_date)
-	for i in range(len(all_dates) - 1):
+	if choose == 1:
+		max_tweets = int(input("Enter the maximum tweets number that every day you will collect:"))
 		driver = webdriver.Chrome()
-		scroll(driver, str(all_dates[i]), str(all_dates[i + 1]), wordsToSearch, lang, max_time)
-		scrape_tweets(driver)
-		time.sleep(3)
-		print("The tweets for {} are ready!".format(all_dates[i]))
+		for i in range(len(all_dates) - 1):
+			scroll2(driver, str(all_dates[i]), str(all_dates[i + 1]), wordsToSearch, lang, max_tweets)
+			scrape_tweets(driver)
+			time.sleep(3)
+			print("The tweets for {} are ready!".format(all_dates[i]))
 		driver.quit()
+	elif choose == 2:
+		driver = webdriver.Chrome()
+		for i in range(len(all_dates) - 1):
+			scroll(driver, str(all_dates[i]), str(all_dates[i + 1]), wordsToSearch, lang)
+			scrape_tweets(driver)
+			time.sleep(3)
+			print("The tweets for {} are ready!".format(all_dates[i]))
+		driver.quit()
+
 	conn.close()

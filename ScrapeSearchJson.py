@@ -207,7 +207,7 @@ class TwitterSearchImpl(TwitterSearch):
         Save tweets into mysql database.
         :return: A Boolean to judge whether continue to get tweets
         """
-        sql = "REPLACE INTO twitter_text(tweet_id, user_id, user_name, created_time, tweet_text)VALUES (%s, %s, %s, %s, %s)"
+        sql = "REPLACE INTO search_tweet(tweet_id, user_id, user_name, created_time, tweet_text)VALUES (%s, %s, %s, %s, %s)"
         conn = dbpool.connection()
         cur = conn.cursor()
         tweet_list = [] #used to save into mysql
@@ -325,8 +325,11 @@ if __name__ == '__main__':
     select_tweets_since = datetime.datetime.strptime(select_tweets_since, '%Y-%m-%d')
     select_tweets_until = datetime.datetime.strptime(select_tweets_until, '%Y-%m-%d')
     threads = 10
-    max_time = int(input("Enter the maximum number 'n' that every day you will collect 20*n tweets:"))
-    max_tweets = max_time * 20
-
-    mul = MultiThread(rate_delay_seconds, error_delay_seconds, select_tweets_since, select_tweets_until, max_tweets, threads)
-    mul.search_thread(search_query, lang)
+    choose = int(input("input what kind of method you want to get:\n1).the day you want get some tweets   2).the day you want get enough tweets"))
+    if choose == 1:
+        max_tweets = int(input("Enter the maximum tweets number that every day you will collect:"))
+        mul = MultiThread(rate_delay_seconds, error_delay_seconds, select_tweets_since, select_tweets_until, max_tweets, threads)
+        mul.search_thread(search_query, lang)
+    elif choose == 2:
+        mul = MultiThread(rate_delay_seconds, error_delay_seconds, select_tweets_since, select_tweets_until, None, threads)
+        mul.search_thread(search_query, lang)
