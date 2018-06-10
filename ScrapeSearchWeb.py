@@ -162,7 +162,7 @@ if __name__ == "__main__":
 	lang = int(input("0) All Languages 1) English | 2) Italian | 3) Spanish | 4) French | 5) German | 6) Russian | 7) Chinese\nEnter the language you want to use: "))
 	start_date = input("Enter the start date in (Y-M-D): ")
 	end_date = input("Enter the end date in (Y-M-D): ")
-	choose = int(input("input what kind of method you want to get:\n1).the day you want get some tweets   2).the day you want get all tweets"))
+	choose = int(input("input what kind of method you want to get:\n1).the day you want get some tweets   2).the day you want get all tweets :"))
 	all_dates = get_all_dates(start_date, end_date)
 	if choose == 1:
 		max_tweets = int(input("Enter the maximum tweets number that every day you will collect:"))
