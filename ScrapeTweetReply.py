@@ -111,7 +111,7 @@ def get_tweet_from_sql():
 
 
 if __name__ == "__main__":
-    sql_insert = "REPLACE INTO tweet_reply(tweet_id, reply_id, real_name, nick_name, created_time, tweet_text)VALUES (%s, %s, %s, %s, %s, %s)"
+    sql_insert = "REPLACE INTO tweet_reply(primal_id, tweet_id, real_name, nick_name, created_time, tweet_text)VALUES (%s, %s, %s, %s, %s, %s)"
 
     conn = pymysql.connect(host='localhost', user='root', passwd='123456', db='twitter', port=3306, charset='utf8mb4')
     cur = conn.cursor()

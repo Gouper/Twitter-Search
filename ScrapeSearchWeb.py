@@ -114,7 +114,6 @@ def scrape_tweets(driver):
 	except Exception as e:
 		print(e)
 		print("Whoops! Something went wrong!")
-		driver.quit()
 
 def save_into_sql(data):
 	l = len(data['date'])
@@ -123,7 +122,7 @@ def save_into_sql(data):
 	for i in range(l):
 		data['nick_name'][i] = data['nick_name'][i].replace(u'\xa0', u' ')
 		data['tweet'][i] = data['tweet'][i].replace(u'\xa0', u' ')
-		tweet_list.append([data['tweet_id'][i], data['user_id'][i], data['real_name'][i], data['nick_name'][i], data['date'][i], data['tweet'][i]])
+		tweet_list.append([data['tweet_id'][i], data['user_id'][i], data['nick_name'][i], data['date'][i], data['tweet'][i]])
 	cur.executemany(sql1, tweet_list)
 	conn.commit()
 
@@ -154,7 +153,7 @@ def get_all_dates(start_date, end_date):
 	return dates
 
 if __name__ == "__main__":
-	sql1 = "REPLACE INTO search_tweet(tweet_id, user_id, real_name, nick_name, created_time, tweet_text)VALUES (%s, %s, %s, %s, %s, %s)"
+	sql1 = "REPLACE INTO search_tweet(tweet_id, user_id, user_name, created_time, tweet_text)VALUES (%s, %s, %s, %s, %s)"
 	conn = pymysql.connect(host='localhost', user='root', passwd='123456', db='twitter', port=3306, charset='utf8mb4')
 	cur = conn.cursor()
 
