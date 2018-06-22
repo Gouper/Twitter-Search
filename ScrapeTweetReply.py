@@ -14,6 +14,7 @@ from selenium.common.exceptions import TimeoutException,NoSuchElementException
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
 import pymysql
+import DataClean
 
 
 def scroll(driver, user, tid):
@@ -69,6 +70,7 @@ def scrape_tweets(driver, source_id):
                 print(e)
                 tweets = " "
             tweet_text = "".join(tweets)
+            tweet_text = DataClean.dataclean(tweet_text)
             # hashtags = i.find_all("a", class_="twitter-hashtag")[0].string
             dates.append(date)
             names.append(nick_name)

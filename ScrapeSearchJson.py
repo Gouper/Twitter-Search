@@ -18,6 +18,7 @@ import requests
 from abc import ABCMeta
 from abc import abstractmethod
 from bs4 import BeautifulSoup
+import DataClean
 
 dbpool = PooledDB(creator=pymysql, mincached=10, maxcached=10, maxshared=20, maxconnections=100, host='localhost', user='root', passwd='123456', db='twitter', port=3306, charset='utf8mb4' )
 
@@ -128,6 +129,7 @@ class TwitterSearch(object):
             text_p = li.find("p", class_="tweet-text")
             if text_p is not None:
                 tweet['text'] = text_p.get_text()
+                tweet['text'] = DataClean.dataclean(tweet['text'])
 
             # Tweet User ID, User Screen Name, User Name
             user_details_div = li.find("div", class_="tweet")
