@@ -21,7 +21,7 @@ cur.execute(sql)
 results = cur.fetchall()
 for i in results:
     params = (i[1], i[2])
-    cur.execute(sql_replace ,params)
+    cur.execute(sql_replace, params)
     conn.commit()
 conn.close()
 
