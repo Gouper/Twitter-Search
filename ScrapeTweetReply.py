@@ -105,26 +105,39 @@ def save_into_sql(data, source_id):
     cur.executemany(sql_insert, tweet_list)
     conn.commit()
 
-def get_tweet_from_sql():
-    sql_search = "SELECT real_name, tweet_id FROM user_tweet WHERE reply_index = 0"
+def get_tweet_from_sql(sheet, index):
+    sql_search = make_sql_search(sheet, index)
     cur.execute(sql_search)
     results = cur.fetchall()
     return results
+def make_sql_search(sheet, index):
+    if index == 1:
+        sql = "SELECT tweet_id FROM %s WHERE reply_count != '0' AND reply_index = 0" % (sheet)
+    else:
+        start = input("Enter the start date: ")
+        end = input("Enter the end date: ")
+        sql = "SELECT tweet_id FROM %s WHERE created_time < '%s' AND created_time > '%s' AND reply_count != '0' AND reply_index = 0" % (sheet, end, start)
+    return sql
+def update_sql(sheet, tweet_id):
+    sql ="UPDATE %s SET reply_index = 1 WHERE tweet_id = '%s'" % (sheet, tweet_id)
+    return sql
 
 
 if __name__ == "__main__":
-    sql_insert = "REPLACE INTO tweet_reply(primal_id, tweet_id, real_name, nick_name, created_time, tweet_text)VALUES (%s, %s, %s, %s, %s, %s)"
-
     conn = pymysql.connect(host='localhost', user='root', passwd='123456', db='twitter', port=3306, charset='utf8mb4')
     cur = conn.cursor()
-    tweet_ids = get_tweet_from_sql()
+    sheet = input("Enter the sheet you want to get reply:")
+    index = int(input("Enter the method you want to export:\n1. Export All     2. Export Some :"))
+    tweet_ids = get_tweet_from_sql(sheet, index)
+
+    sql_insert = "REPLACE INTO tweet_reply(primal_id, tweet_id, real_name, nick_name, created_time, tweet_text)VALUES (%s, %s, %s, %s, %s, %s)"
     driver = webdriver.Chrome()
     for i in tweet_ids:
-        scroll(driver, i[0], i[1])
-        scrape_tweets(driver, i[1])
-        sql_update = "UPDATE user_tweet SET reply_index = 1 WHERE tweet_id = '%s'" % (i[1])
+        scroll(driver, "aa", i[0])
+        scrape_tweets(driver, i[0])
+        sql_update = update_sql(sheet, i[0])
         cur.execute(sql_update)
         conn.commit()
-        print("The tweet(%s) has been down" % i[1])
+        print("The tweet %s has been down" % i[0])
     driver.quit()
     conn.close()

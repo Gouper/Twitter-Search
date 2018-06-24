@@ -77,6 +77,9 @@ def scrape_tweets(driver):
 		uid = []
 		tid = []
 		real_name = []
+		reply_counts = []
+		retweet_counts = []
+		like_counts = []
 		for i in content:
 			date = i.find_all("span", class_="_timestamp")[0].get("data-time")
 			date = datetime.datetime.utcfromtimestamp(int(date))
@@ -90,6 +93,10 @@ def scrape_tweets(driver):
 
 			user_id = i.find_all("a", class_="account-group")[0].get("data-user-id")
 			tweet_id = i.find_all("a", class_="tweet-timestamp")[0].get("data-conversation-id")
+			count = i.find_all("span", class_="ProfileTweet-actionCount")
+			reply_count = count[0].get("data-tweet-stat-count")
+			retweet_count = count[1].get("data-tweet-stat-count")
+			like_count = count[2].get("data-tweet-stat-count")
 
 			tweets = i.find("p", class_="tweet-text").strings
 			tweet_text = "".join(tweets)
@@ -101,6 +108,9 @@ def scrape_tweets(driver):
 			uid.append(user_id)
 			tid.append(tweet_id)
 			real_name.append(user_name)
+			reply_counts.append(reply_count)
+			retweet_counts.append(retweet_count)
+			like_counts.append(like_count)
 
 		data = {
 			"date": dates,
@@ -108,7 +118,10 @@ def scrape_tweets(driver):
 			"tweet": tweet_texts,
 			"user_id": uid,
 			"tweet_id": tid,
-			"real_name": real_name
+			"real_name": real_name,
+			"reply_count": reply_counts,
+			"retweet_count": retweet_counts,
+			"like_count": like_counts
 		}
 		# make_csv(data)
 		save_into_sql(data)
@@ -124,7 +137,7 @@ def save_into_sql(data):
 	for i in range(l):
 		data['nick_name'][i] = data['nick_name'][i].replace(u'\xa0', u' ')
 		data['tweet'][i] = data['tweet'][i].replace(u'\xa0', u' ')
-		tweet_list.append([data['tweet_id'][i], data['user_id'][i], data['nick_name'][i], data['date'][i], data['tweet'][i]])
+		tweet_list.append([data['tweet_id'][i], data['user_id'][i], data['nick_name'][i], data['date'][i], data['tweet'][i], data['reply_count'][i], data['retweet_count'][i], data['like_count'][i]])
 	cur.executemany(sql1, tweet_list)
 	conn.commit()
 
@@ -155,7 +168,7 @@ def get_all_dates(start_date, end_date):
 	return dates
 
 if __name__ == "__main__":
-	sql1 = "REPLACE INTO search_tweet(tweet_id, user_id, user_name, created_time, tweet_text)VALUES (%s, %s, %s, %s, %s)"
+	sql1 = "REPLACE INTO search_tweet(tweet_id, user_id, user_name, created_time, tweet_text, reply_count, retweet_count, like_count, reply_index)VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 0)"
 	conn = pymysql.connect(host='localhost', user='root', passwd='123456', db='twitter', port=3306, charset='utf8mb4')
 	cur = conn.cursor()
 
