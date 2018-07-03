@@ -153,6 +153,10 @@ class TwitterSearch(object):
             if favorite_span is not None and len(retweet_span) > 0:
                 tweet['favorites'] = int(favorite_span[0]['data-tweet-stat-count'])
 
+            reply_span = li.select("span.ProfileTweet-action--reply > span.ProfileTweet-actionCount")
+            if reply_span is not None and len(reply_span) > 0:
+                tweet['reply'] = int(reply_span[0]['data-tweet-stat-count'])
+
             tweets.append(tweet)
         return tweets
 
@@ -258,7 +262,7 @@ class TwitterSlicer(TwitterSearch):
         """
         Save tweets into mysql database.
         """
-        sql = "REPLACE INTO search_tweet(tweet_id, user_id, user_name, created_time, tweet_text)VALUES (%s, %s, %s, %s, %s)"
+        sql = "REPLACE INTO search_tweet(tweet_id, user_id, user_name, created_time, tweet_text, reply_count, retweet_count, like_count, reply_index)VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 0)"
         conn =dbpool.connection()
         cur = conn.cursor()
         tweet_list = []  # used to save into mysql
@@ -272,7 +276,7 @@ class TwitterSlicer(TwitterSearch):
                 log.info("%i [%s] -{%s}--[%s]-%s" % (self.counter, t.strftime(fmt), tweet['tweet_id'], tweet['user_name'], tweet['text']))
                 tweet['user_name'] = tweet['user_name'].replace(u'\xa0', u' ')
                 tweet['text'] = tweet['text'].replace(u'\xa0', u' ')
-                tweet_list.append([tweet['tweet_id'], tweet['user_id'], tweet['user_name'], t.strftime(fmt), tweet['text']])
+                tweet_list.append([tweet['tweet_id'], tweet['user_id'], tweet['user_name'], t.strftime(fmt), tweet['text'], tweet['retweets'], tweet['reply'], tweet['favorites']])
                 # When we've reached our max limit, return False so collection stops
                 if self.max_tweets is not None and self.counter >= self.max_tweets:
                     cur.executemany(sql, tweet_list)
